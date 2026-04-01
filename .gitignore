@@ -7,7 +7,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+api-check/node_modules
+
+# Build output
 dist
 dist-ssr
 *.local
@@ -22,3 +26,26 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Sensitive / credentials — NEVER commit these
+api-check/session.txt
+api-check/.env
+.env
+.env.*
+
+# Puppeteer browser profile data (large binary files, not source code)
+api-check/browser-profile/
+
+# Debug screenshots and HTML dumps
+api-check/debug-login.png
+api-check/debug_screenshot.png
+api-check/debug_attendance.html
+api-check/debug_html.html
+api-check/debug_index.html
+api-check/debug*.html
+api-check/marks.html
+api-check/timetable.html
+api-check/user_info_raw.html
+
+# lock files (optional — remove these lines if you want to commit them)
+# package-lock.json
