@@ -9,7 +9,7 @@ import UserPage from './components/UserPage'
 import Sidebar from './components/Sidebar'
 import Login from './components/Login'
 import { Activity, Target, Calendar, BookOpen, BarChart3, User, Menu, X, Loader2 } from 'lucide-react'
-import { bootstrapProfileFromServer } from './services/profileService'
+import { loadCachedProfile, scrapeAndCache, clearSession } from './services/scraperService'
 
 function profileToGlobalUser(data) {
   return {
@@ -17,12 +17,12 @@ function profileToGlobalUser(data) {
     initials: data.name
       ? data.name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()
       : 'ST',
-    registrationNo: data.regNumber,
-    department: data.department,
-    section: data.section,
-    branch: data.program,
-    phone: data.mobile,
-    email: data.srmId,
+    registrationNo: data.regNumber || data.registration_number || '',
+    department: data.department || '—',
+    section: data.section || '—',
+    branch: data.program || '—',
+    phone: data.mobile || '—',
+    email: data.srmId || data.email || '—',
   }
 }
 
@@ -30,111 +30,124 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [globalUser, setGlobalUser] = useState(null)
-  const [bootState, setBootState] = useState('loading')
-  const [bootError, setBootError] = useState(null)
+  const [bootState, setBootState] = useState('loading') // 'loading' | 'login' | 'scraping' | 'ready'
+  const [loginError, setLoginError] = useState(null)
 
+  // CAPTCHA state
+  const [captchaImage, setCaptchaImage] = useState(null)
+  const [captchaSessionId, setCaptchaSessionId] = useState(null)
+  const [pendingCreds, setPendingCreds] = useState(null)
+
+  // ── Bootstrap: try Firestore cache first ──────────────────────────────
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
-        const data = await bootstrapProfileFromServer()
+        const cached = await loadCachedProfile()
         if (cancelled) return
-        if (data?.error) {
-          setBootError(typeof data.error === 'string' ? data.error : 'Failed to load profile')
-          setBootState('error')
+        if (cached) {
+          setGlobalUser(profileToGlobalUser(cached))
+          setBootState('ready')
           return
         }
-        setGlobalUser(profileToGlobalUser(data))
-        setBootState('ready')
       } catch (err) {
-        if (cancelled) return
-        console.error(err)
-        setBootError(err.message || 'Could not load profile. Is api-check running on port 3001?')
-        setBootState('error')
+        console.warn('[App] Cache load failed:', err)
       }
+      // No cached data — show login
+      if (!cancelled) setBootState('login')
     })()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [])
 
-  const retryBootstrap = () => {
-    setBootError(null)
-    setBootState('loading')
-    ;(async () => {
-      try {
-        const data = await bootstrapProfileFromServer()
-        if (data?.error) {
-          setBootError(typeof data.error === 'string' ? data.error : 'Failed to load profile')
-          setBootState('error')
-          return
-        }
-        setGlobalUser(profileToGlobalUser(data))
-        setBootState('ready')
-      } catch (err) {
-        console.error(err)
-        setBootError(err.message || 'Could not load profile')
-        setBootState('error')
+  // ── Login handler ─────────────────────────────────────────────────────
+  const handleLogin = async ({ netId, password, captchaText }) => {
+    setLoginError(null)
+    setBootState('scraping')
+
+    try {
+      const result = await scrapeAndCache(
+        captchaText ? pendingCreds?.email || netId : netId,
+        captchaText ? pendingCreds?.password || password : password,
+        captchaText || '',
+        captchaText ? captchaSessionId || '' : '',
+      )
+
+      if (result.captchaRequired) {
+        // Show CAPTCHA to user
+        setCaptchaImage(result.captchaImage)
+        setCaptchaSessionId(result.sessionId)
+        setPendingCreds({ email: netId, password })
+        setBootState('login')
+        return
       }
-    })()
+
+      // Success — clear CAPTCHA state
+      setCaptchaImage(null)
+      setCaptchaSessionId(null)
+      setPendingCreds(null)
+      setGlobalUser(profileToGlobalUser(result.profile))
+      setBootState('ready')
+    } catch (err) {
+      console.error('[App] Login/scrape failed:', err)
+      setCaptchaImage(null)
+      setCaptchaSessionId(null)
+      setPendingCreds(null)
+      setLoginError(err.message || 'Login failed. Please check your credentials and try again.')
+      setBootState('login')
+    }
   }
 
+  // ── Logout handler ────────────────────────────────────────────────────
+  const handleLogout = () => {
+    clearSession()
+    setGlobalUser(null)
+    setBootState('login')
+    setCaptchaImage(null)
+    setCaptchaSessionId(null)
+    setPendingCreds(null)
+    setLoginError(null)
+  }
+
+  // ── Loading state ─────────────────────────────────────────────────────
   if (bootState === 'loading') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-midnight text-text-primary p-6">
         <Loader2 className="w-10 h-10 animate-spin text-accent-blue" />
         <p className="text-text-muted text-sm text-center max-w-md">
-          Loading profile from server (api-check uses <code className="text-text-primary/90">.env</code> or{' '}
-          <code className="text-text-primary/90">session.txt</code>)…
+          Loading your profile…
         </p>
       </div>
     )
   }
 
-  if (bootState === 'error') {
-    const handleLogin = async ({ netId, password }) => {
-      setBootState('loading')
-      try {
-        const response = await fetch('/api/profile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reg_no: netId, password }),
-        })
-        const data = await response.json().catch(() => ({}))
-        if (response.ok && !data.error) {
-          setGlobalUser(profileToGlobalUser(data))
-        } else {
-          // API unavailable — use credentials as fallback user identity
-          setGlobalUser({
-            name: netId,
-            initials: netId.substring(0, 2).toUpperCase(),
-            registrationNo: netId,
-            department: '—',
-            section: '—',
-            branch: '—',
-            phone: '—',
-            email: netId,
-          })
-        }
-      } catch {
-        // Network error — still navigate to dashboard with fallback user
-        setGlobalUser({
-          name: netId,
-          initials: netId.substring(0, 2).toUpperCase(),
-          registrationNo: netId,
-          department: '—',
-          section: '—',
-          branch: '—',
-          phone: '—',
-          email: netId,
-        })
-      }
-      setBootState('ready')
-    }
-
-    return <Login onLoginSubmit={handleLogin} />
+  // ── Scraping state ────────────────────────────────────────────────────
+  if (bootState === 'scraping') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-midnight text-text-primary p-6">
+        <Loader2 className="w-10 h-10 animate-spin text-accent-blue" />
+        <p className="text-text-muted text-sm text-center max-w-md">
+          Authenticating with SRM Academia and fetching your data…
+        </p>
+        <p className="text-text-muted text-xs text-center max-w-md opacity-60">
+          This may take 15–30 seconds on first login.
+        </p>
+      </div>
+    )
   }
 
+  // ── Login / CAPTCHA state ─────────────────────────────────────────────
+  if (bootState === 'login') {
+    return (
+      <Login
+        onLoginSubmit={handleLogin}
+        error={loginError}
+        captchaImage={captchaImage}
+        captchaSessionId={captchaSessionId}
+      />
+    )
+  }
+
+  // ── Dashboard (ready) ─────────────────────────────────────────────────
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Activity },
     { id: 'focus', label: 'Focus Tracker', icon: Target },
@@ -201,7 +214,7 @@ function App() {
               {activeTab === 'timetable' && <Timetable onNavigate={(tab) => setActiveTab(tab)} />}
               {activeTab === 'assignments' && <Assignments onBackToDashboard={() => setActiveTab('dashboard')} />}
               {activeTab === 'analytics' && <Analytics onBackToDashboard={() => setActiveTab('dashboard')} />}
-              {activeTab === 'user' && <UserPage globalUser={globalUser} onBackToDashboard={() => setActiveTab('dashboard')} />}
+              {activeTab === 'user' && <UserPage globalUser={globalUser} onBackToDashboard={() => setActiveTab('dashboard')} onLogout={handleLogout} />}
             </motion.div>
           </AnimatePresence>
         </main>

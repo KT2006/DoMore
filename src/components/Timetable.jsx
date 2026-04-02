@@ -55,41 +55,64 @@ const Timetable = ({ onNavigate }) => {
 
     getTimetable(reg_no)
       .then(data => {
-        // data is of shape [{ dayOrder: "Day 1", class: [ { slot, time, courseTitle, ... } ] }]
+        if (!data) {
+          setError('No timetable data found. Please log in again.')
+          setLoading(false)
+          return
+        }
+
+        // New scraper format:
+        //   { "1": [ { hour, start_time, end_time, slot_code, course: { course_code, course_title, category, room_no, faculty_name } | null } ], ... }
         const mappedSchedule = {}
         const colors = ['mint', 'cyan', 'amber', 'purple', 'rose']
         let colorIdx = 0
 
-        data.forEach(dayInfo => {
-           const dName = dayInfo.dayOrder
-           mappedSchedule[dName] = []
-           
-           dayInfo.class.forEach((cls, idx) => {
-              if (cls.isClass && cls.courseTitle) {
-                  // e.g "time": "08:50 AM - 09:40 AM" -> duration 50 mins
-                  const timeParts = cls.time.split(' - ')
-                  if (timeParts.length === 2) {
-                     const startMinutes = parse12hTimeToMinutes(timeParts[0])
-                     const endMinutes = parse12hTimeToMinutes(timeParts[1])
-                     if (startMinutes != null && endMinutes != null && endMinutes > startMinutes) {
-                        const startH = Math.floor(startMinutes / 60)
-                        const startM = startMinutes % 60
-                        const timeStr = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`
-                        const duration = endMinutes - startMinutes
-                        mappedSchedule[dName].push({
-                           id: `${dName}-${idx}`,
-                           subject: cls.courseTitle,
-                           time: timeStr,
-                           duration,
-                           location: cls.courseRoomNo || 'TBA',
-                           color: colors[colorIdx % colors.length]
-                        })
-                        colorIdx++
-                     }
-                  }
-              }
-           })
+        // Iterate over day keys ("1" through "5")
+        Object.entries(data).forEach(([dayKey, slots]) => {
+          const dayName = `Day ${dayKey}`
+          mappedSchedule[dayName] = []
+
+          if (!Array.isArray(slots)) return
+
+          slots.forEach((slot, idx) => {
+            // Skip free periods (course is null)
+            if (!slot.course) return
+
+            // Parse 24h time strings like "08:50" or "01:25" into minutes
+            const parseTime = (timeStr) => {
+              if (!timeStr) return null
+              const parts = timeStr.split(':')
+              if (parts.length !== 2) return null
+              let h = parseInt(parts[0], 10)
+              const m = parseInt(parts[1], 10)
+              if (isNaN(h) || isNaN(m)) return null
+              // Handle PM times stored as 12h format (e.g., "01:25" = 13:25)
+              if (h < 8) h += 12
+              return h * 60 + m
+            }
+
+            const startMinutes = parseTime(slot.start_time)
+            const endMinutes = parseTime(slot.end_time)
+
+            if (startMinutes == null || endMinutes == null || endMinutes <= startMinutes) return
+
+            const startH = Math.floor(startMinutes / 60)
+            const startM = startMinutes % 60
+            const timeStr = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`
+            const duration = endMinutes - startMinutes
+
+            mappedSchedule[dayName].push({
+              id: `${dayName}-${idx}`,
+              subject: slot.course.course_title || 'Unknown',
+              time: timeStr,
+              duration,
+              location: slot.course.room_no || 'TBA',
+              color: colors[colorIdx % colors.length],
+            })
+            colorIdx++
+          })
         })
+
         setSchedule(mappedSchedule)
         setLoading(false)
       })

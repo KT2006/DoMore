@@ -1,11 +1,11 @@
 import { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Mail, Phone, BookOpen, Building2, Hash, FileText, Loader2, Calendar as CalendarIcon } from 'lucide-react'
+import { Mail, Phone, BookOpen, Building2, Hash, FileText, Loader2, Calendar as CalendarIcon, LogOut } from 'lucide-react'
 import BackButton from './BackButton'
 import { getFocusSessions, getFocusSessionTime } from '../services/focusService'
 import { getAssignments } from '../services/assignmentService'
 
-const UserPage = ({ globalUser, onBackToDashboard }) => {
+const UserPage = ({ globalUser, onBackToDashboard, onLogout }) => {
   const reg_no = localStorage.getItem('reg_no') || 'demo_student'
   const [focusPulse, setFocusPulse] = useState([])
   const [assignmentPulse, setAssignmentPulse] = useState([])
@@ -110,7 +110,18 @@ const UserPage = ({ globalUser, onBackToDashboard }) => {
           <h1 className="text-4xl font-bold text-text-primary mb-0.5">Student Profile</h1>
           <p className="text-text-muted text-base">Your academic and contact details</p>
         </div>
-        {onBackToDashboard && <BackButton onClick={onBackToDashboard} />}
+        <div className="flex items-center gap-2">
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/20 hover:border-red-500/50 transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </button>
+          )}
+          {onBackToDashboard && <BackButton onClick={onBackToDashboard} />}
+        </div>
       </div>
 
       {/* Profile header card – same style as reference: avatar, name, reg no below name, dept */}
