@@ -14,32 +14,9 @@ const Login = ({ onLoginSubmit }) => {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        backgroundColor: '#000000',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', sans-serif",
-      }}
-    >
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 sm:p-6 md:p-8 font-sans">
       {/* Card */}
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '340px',
-          backgroundColor: '#3a3a3a',
-          borderRadius: '28px',
-          padding: '40px 32px 40px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-        }}
-      >
+      <div className="w-full max-w-[340px] sm:max-w-[400px] md:max-w-[440px] bg-[#3a3a3a] rounded-[28px] p-8 sm:p-10 md:p-12 flex flex-col items-center shadow-[0_20px_60px_rgba(0,0,0,0.6)] transition-all duration-300">
         {/* Logo Circle */}
         {/* Do-More egg-timer logo */}
         <svg
@@ -48,7 +25,7 @@ const Login = ({ onLoginSubmit }) => {
           viewBox="0 0 100 120"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          style={{ marginBottom: '10px', flexShrink: 0 }}
+          className="mb-3 sm:mb-4 md:mb-5 shrink-0"
         >
           {/* Egg / timer outer shape — black fill, white stroke */}
           <path
@@ -90,61 +67,21 @@ const Login = ({ onLoginSubmit }) => {
 
 
         {/* Heading */}
-        <h1
-          style={{
-            color: '#ffffff',
-            fontSize: '22px',
-            fontWeight: '400',
-            letterSpacing: '0.02em',
-            margin: '0 0 6px',
-            textAlign: 'center',
-          }}
-        >
+        <h1 className="text-white text-[22px] sm:text-[26px] md:text-[28px] font-normal tracking-[0.02em] m-0 mb-1.5 sm:mb-2 text-center transition-all duration-300">
           Welcome Back
         </h1>
 
         {/* Sub-heading */}
-        <p
-          style={{
-            color: '#8e8e8e',
-            fontSize: '14px',
-            margin: '0 0 28px',
-            textAlign: 'center',
-          }}
-        >
+        <p className="text-[#8e8e8e] text-[14px] sm:text-[15px] md:text-base m-0 mb-7 sm:mb-9 text-center transition-all duration-300">
           Sign in to DoMore.....
         </p>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+        <form onSubmit={handleSubmit} className="w-full">
           {/* NetID Input */}
-          <div
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              width: '100%',
-              height: '52px',
-              backgroundColor: '#252525',
-              borderRadius: '12px',
-              border: '1px solid rgba(255,255,255,0.06)',
-              marginBottom: '14px',
-              overflow: 'hidden',
-              transition: 'border-color 0.2s',
-            }}
-            onFocus={() => {}}
-          >
-            <div
-              style={{
-                paddingLeft: '14px',
-                paddingRight: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                color: '#6e6e6e',
-                flexShrink: 0,
-              }}
-            >
-              <Mail size={18} strokeWidth={1.5} />
+          <div className="group relative flex items-center w-full h-[52px] sm:h-[56px] md:h-[60px] bg-[#252525] rounded-xl border border-white/5 mb-3.5 sm:mb-4 overflow-hidden transition-colors duration-200 focus-within:border-white/30 hover:border-white/20">
+            <div className="pl-3.5 sm:pl-4 pr-2.5 sm:pr-3 flex items-center text-[#6e6e6e] group-focus-within:text-[#a0a0a0] transition-colors duration-200 shrink-0">
+              <Mail size={18} strokeWidth={1.5} className="sm:w-5 sm:h-5 md:w-[22px] md:h-[22px]" />
             </div>
             <input
               id="login-netid"
@@ -153,46 +90,15 @@ const Login = ({ onLoginSubmit }) => {
               value={netId}
               onChange={(e) => setNetId(e.target.value)}
               required
-              style={{
-                flex: 1,
-                height: '100%',
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                color: '#e2e2e2',
-                fontSize: '15px',
-                paddingRight: '14px',
-              }}
+              className="flex-1 h-full border-none outline-none text-[#e2e2e2] text-[15px] sm:text-base pr-3.5 sm:pr-4 placeholder-[#6e6e6e]"
+              style={{ background: 'transparent' }}
             />
           </div>
 
           {/* Password Input */}
-          <div
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              width: '100%',
-              height: '52px',
-              backgroundColor: '#252525',
-              borderRadius: '12px',
-              border: '1px solid rgba(255,255,255,0.06)',
-              marginBottom: '24px',
-              overflow: 'hidden',
-              transition: 'border-color 0.2s',
-            }}
-          >
-            <div
-              style={{
-                paddingLeft: '14px',
-                paddingRight: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                color: '#6e6e6e',
-                flexShrink: 0,
-              }}
-            >
-              <Lock size={18} strokeWidth={1.5} />
+          <div className="group relative flex items-center w-full h-[52px] sm:h-[56px] md:h-[60px] bg-[#252525] rounded-xl border border-white/5 mb-6 sm:mb-8 overflow-hidden transition-colors duration-200 focus-within:border-white/30 hover:border-white/20">
+            <div className="pl-3.5 sm:pl-4 pr-2.5 sm:pr-3 flex items-center text-[#6e6e6e] group-focus-within:text-[#a0a0a0] transition-colors duration-200 shrink-0">
+              <Lock size={18} strokeWidth={1.5} className="sm:w-5 sm:h-5 md:w-[22px] md:h-[22px]" />
             </div>
             <input
               id="login-password"
@@ -201,40 +107,18 @@ const Login = ({ onLoginSubmit }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{
-                flex: 1,
-                height: '100%',
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                color: '#e2e2e2',
-                fontSize: '15px',
-                paddingRight: '4px',
-              }}
+              className="flex-1 h-full border-none outline-none text-[#e2e2e2] text-[15px] sm:text-base pr-1 placeholder-[#6e6e6e]"
+              style={{ background: 'transparent' }}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              style={{
-                paddingLeft: '10px',
-                paddingRight: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#6e6e6e',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'color 0.2s',
-                flexShrink: 0,
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#a0a0a0')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#6e6e6e')}
+              className="pl-2.5 pr-3.5 sm:pr-4 flex items-center justify-center text-[#6e6e6e] hover:text-[#a0a0a0] bg-none border-none cursor-pointer transition-colors duration-200 shrink-0 outline-none"
             >
               {showPassword ? (
-                <EyeOff size={18} strokeWidth={1.5} />
+                <EyeOff size={18} strokeWidth={1.5} className="sm:w-5 sm:h-5 md:w-[22px] md:h-[22px]" />
               ) : (
-                <Eye size={18} strokeWidth={1.5} />
+                <Eye size={18} strokeWidth={1.5} className="sm:w-5 sm:h-5 md:w-[22px] md:h-[22px]" />
               )}
             </button>
           </div>
@@ -243,31 +127,7 @@ const Login = ({ onLoginSubmit }) => {
           <button
             id="login-submit"
             type="submit"
-            style={{
-              width: '100%',
-              height: '50px',
-              backgroundColor: '#ffffff',
-              color: '#000000',
-              fontSize: '15px',
-              fontWeight: '600',
-              borderRadius: '999px',
-              border: 'none',
-              cursor: 'pointer',
-              letterSpacing: '0.01em',
-              transition: 'background-color 0.2s, transform 0.1s',
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = '#e0e0e0')
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = '#ffffff')
-            }
-            onMouseDown={(e) =>
-              (e.currentTarget.style.transform = 'scale(0.98)')
-            }
-            onMouseUp={(e) =>
-              (e.currentTarget.style.transform = 'scale(1)')
-            }
+            className="w-full h-[50px] sm:h-[54px] md:h-[58px] bg-white text-black text-[15px] sm:text-[16px] md:text-[17px] font-semibold rounded-full border-none cursor-pointer tracking-[0.01em] transition-all duration-200 hover:bg-[#e0e0e0] active:scale-[0.98]"
           >
             Sign In
           </button>

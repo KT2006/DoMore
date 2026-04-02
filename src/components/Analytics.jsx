@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, Clock, Target, Zap, Calendar, BarChart3 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, AreaChart, Area } from 'recharts'
+import { TrendingUp, Clock, Target, Zap, Calendar, BarChart3, AlertCircle, CheckCircle2, BookOpen, Star } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import BackButton from './BackButton'
 import { getFocusSessions, getFocusSessionTime } from '../services/focusService'
 import { getAssignments } from '../services/assignmentService'
@@ -83,66 +83,33 @@ const Analytics = ({ onBackToDashboard }) => {
     return a.status !== 'completed' && a.dueDate < now
   })
 
-  const behavioralPatterns = [
-    { metric: 'Consistency', value: consistencyScore, max: 100 },
-    {
-      metric: 'Focus Duration',
-      value: Math.min(100, Math.round((avgSessionDuration / 2) * 100)),
-      max: 100,
-    },
-    {
-      metric: 'Early Planning',
-      value: Math.min(
-        100,
-        assignments.length
-          ? Math.round(
-              (assignments.filter(a => a.status === 'pending').length / assignments.length) *
-                100
-            )
-          : 60
-      ),
-      max: 100,
-    },
-    {
-      metric: 'Procrastination',
-      value: Math.min(
-        100,
-        assignments.length
-          ? Math.round((overdueAssignments.length / assignments.length) * 100)
-          : 20
-      ),
-      max: 100,
-    },
-    {
-      metric: 'Peak Hours',
-      value: 80,
-      max: 100,
-    },
-  ]
 
-  const insights = [
-    {
-      type: 'positive',
-      icon: TrendingUp,
-      title: 'Consistent Improvement',
-      description: 'Your weekly productivity has increased by 36% over the past month',
-      color: 'mint',
-    },
-    {
-      type: 'warning',
-      icon: Clock,
-      title: 'Peak Performance Time',
-      description: 'You\'re most productive between 10 AM - 2 PM. Schedule important tasks during this window',
-      color: 'cyan',
-    },
-    {
-      type: 'suggestion',
-      icon: Target,
-      title: 'Subject Balance',
-      description: 'Consider allocating more time to Physics to improve consistency',
-      color: 'mint',
-    },
-  ]
+
+  const insights = []
+
+  if (totalFocusHours >= 2) {
+    insights.push({ type: 'positive', icon: TrendingUp, title: 'Solid Focus Output', description: `You've accumulated ${totalFocusHours.toFixed(1)} hours of total focus time. Keep the momentum going!`, color: 'mint' })
+  } else {
+    insights.push({ type: 'suggestion', icon: TrendingUp, title: 'Start Building Momentum', description: 'Dedicate a few short focus sessions today to jumpstart your consistency.', color: 'cyan' })
+  }
+
+  const pendingAssignmentsCount = assignments.filter(a => a.status === 'pending' || a.status === 'in-progress').length
+  if (overdueAssignments.length > 0) {
+    insights.push({ type: 'warning', icon: AlertCircle, title: 'Action Required', description: `You have ${overdueAssignments.length} overdue assignment${overdueAssignments.length > 1 ? 's' : ''}. Prioritize these to stay on track.`, color: 'pink' })
+  } else if (pendingAssignmentsCount > 0) {
+    insights.push({ type: 'suggestion', icon: Target, title: 'Pending Tasks', description: `You have ${pendingAssignmentsCount} incomplete assignment${pendingAssignmentsCount > 1 ? 's' : ''}. Try tackling the highest priority one next.`, color: 'cyan' })
+  } else if (assignments.length > 0) {
+    insights.push({ type: 'positive', icon: CheckCircle2, title: 'All Caught Up!', description: 'Excellent work! You have no pending or overdue assignments currently.', color: 'mint' })
+  } else {
+    insights.push({ type: 'suggestion', icon: BookOpen, title: 'Plan Ahead', description: 'Add your upcoming assignments to track your deadlines effectively.', color: 'cyan' })
+  }
+
+  const sortedSubjects = [...subjectPerformance].sort((a,b) => b.hours - a.hours)
+  if (sortedSubjects.length > 0) {
+    insights.push({ type: 'positive', icon: Star, title: 'Top Performer', description: `${sortedSubjects[0].subject} is your most focused subject. Good job maintaining dedication here!`, color: 'mint' })
+  } else {
+    insights.push({ type: 'suggestion', icon: Clock, title: 'Schedule Sessions', description: 'Use the Focus Timer to log your active study times and discover your peak performance hours.', color: 'cyan' })
+  }
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -158,16 +125,20 @@ const Analytics = ({ onBackToDashboard }) => {
   const chartStyle = { grid: 'rgba(255,255,255,0.1)', axis: '#9CA3AF', tooltip: { bg: '#141414', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' } }
 
   return (
-    <div className="h-full flex flex-col min-h-0 gap-3">
-      <div className="flex items-start justify-between flex-shrink-0">
-        <div>
-          <h1 className="text-4xl font-bold text-text-primary mb-0.5">Productivity Analytics</h1>
-          <p className="text-text-muted text-base">Deep insights into your study patterns and behaviors</p>
+    <div className="h-full flex flex-col min-h-0 gap-4 sm:gap-5 lg:gap-6 overflow-y-auto pb-6 pr-1 sm:pr-2">
+      <div className="flex flex-row items-start justify-between flex-shrink-0">
+        <div className="flex-1 pr-2 sm:pr-0">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text-primary mb-0.5 leading-tight">Productivity Analytics</h1>
+          <p className="text-text-muted text-xs sm:text-base">Deep insights into your study patterns and behaviors</p>
         </div>
-        {onBackToDashboard && <BackButton onClick={onBackToDashboard} />}
+        {onBackToDashboard && (
+          <div className="flex-shrink-0 transform scale-90 sm:scale-100 origin-right mt-0.5 sm:mt-0">
+            <BackButton onClick={onBackToDashboard} />
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 flex-shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 flex-shrink-0">
         {[
           {
             icon: Clock,
@@ -201,59 +172,24 @@ const Analytics = ({ onBackToDashboard }) => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="card-dark p-3 border border-white/20 card-hover"
+              className="card-dark p-3 sm:p-4 border border-white/20 card-hover"
             >
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
                 <div className="p-1.5 rounded-lg bg-white/10">
-                  <Icon className="w-4 h-4 text-text-primary" />
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-text-primary" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-text-primary">{metric.value}</h3>
-              <p className="text-xs text-text-muted">{metric.label}</p>
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-text-primary leading-tight">{metric.value}</h3>
+              <p className="text-[10px] sm:text-xs text-text-muted mt-0.5">{metric.label}</p>
             </motion.div>
           )
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0">
-        <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="card-dark p-4 border border-white/20 card-hover">
-          <h2 className="text-lg font-bold text-text-primary mb-2">Behavioral Patterns</h2>
-          <div className="h-[140px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={behavioralPatterns}>
-                <PolarGrid stroke={chartStyle.grid} />
-                <PolarAngleAxis dataKey="metric" stroke={chartStyle.axis} tick={{ fill: chartStyle.axis, fontSize: 10 }} />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} stroke={chartStyle.axis} tick={{ fill: chartStyle.axis, fontSize: 8 }} />
-                <Radar name="Performance" dataKey="value" stroke="#9CA3AF" fill="#9CA3AF" fillOpacity={0.2} />
-                <Tooltip contentStyle={{ backgroundColor: chartStyle.tooltip.bg, border: chartStyle.tooltip.border, borderRadius: '8px', color: chartStyle.tooltip.color }} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card-dark p-4 border border-white/20 card-hover flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-2 flex-shrink-0">
-            <h2 className="text-lg font-bold text-text-primary">Weekly Productivity Trend</h2>
-            <span className="text-xs font-semibold text-accent-green flex items-center gap-0.5"><BarChart3 className="w-4 h-4" />+15%</span>
-          </div>
-          <div className="flex-1 min-h-[120px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyComparison}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartStyle.grid} />
-                <XAxis dataKey="week" stroke={chartStyle.axis} tick={{ fill: chartStyle.axis, fontSize: 10 }} />
-                <YAxis stroke={chartStyle.axis} tick={{ fill: chartStyle.axis, fontSize: 10 }} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="hours" fill="#9CA3AF" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-shrink-0">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card-dark p-4 border border-white/20 card-hover flex flex-col min-h-0">
-          <h2 className="text-lg font-bold text-text-primary mb-2 flex-shrink-0">Daily Breakdown</h2>
-          <div className="flex-1 min-h-[120px]">
+      <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-5 flex-shrink-0 lg:flex-shrink-0">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card-dark p-3 sm:p-4 border border-white/20 card-hover flex flex-col min-h-[250px] lg:min-h-[350px] shrink-0">
+          <h2 className="text-base sm:text-lg lg:text-xl font-bold text-text-primary mb-2 flex-shrink-0">Daily Breakdown</h2>
+          <div className="flex-1 min-h-[150px] sm:min-h-[180px] lg:min-h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={dailyProductivity}>
                 <defs>
@@ -272,9 +208,29 @@ const Analytics = ({ onBackToDashboard }) => {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="card-dark p-4 border border-white/20 card-hover">
-          <h2 className="text-lg font-bold text-text-primary mb-2">Subject Performance</h2>
-          <div className="space-y-2">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card-dark p-3 sm:p-4 border border-white/20 card-hover flex flex-col min-h-[250px] lg:min-h-[350px] shrink-0">
+          <div className="flex items-center justify-between mb-2 flex-shrink-0">
+            <h2 className="text-base sm:text-lg lg:text-xl font-bold text-text-primary">Weekly Productivity Trend</h2>
+            <span className="text-[10px] sm:text-xs font-semibold text-accent-green flex items-center gap-0.5"><BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />+15%</span>
+          </div>
+          <div className="flex-1 min-h-[150px] sm:min-h-[180px] lg:min-h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyComparison}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartStyle.grid} />
+                <XAxis dataKey="week" stroke={chartStyle.axis} tick={{ fill: chartStyle.axis, fontSize: 10 }} />
+                <YAxis stroke={chartStyle.axis} tick={{ fill: chartStyle.axis, fontSize: 10 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="hours" fill="#9CA3AF" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+      </div>
+
+      <div className="flex-shrink-0">
+        <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="card-dark p-4 sm:p-5 border border-white/20 card-hover">
+          <h2 className="text-base sm:text-lg lg:text-xl font-bold text-text-primary mb-3 sm:mb-4">Subject Performance</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {subjectPerformance.map((subject, index) => (
               <div key={subject.subject} className="space-y-0.5">
                 <div className="flex items-center justify-between text-sm">
@@ -292,8 +248,8 @@ const Analytics = ({ onBackToDashboard }) => {
       </div>
 
       <div className="flex-shrink-0">
-        <h2 className="text-base font-bold text-text-primary mb-2">Insights & Recommendations</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <h2 className="text-base sm:text-lg lg:text-xl font-bold text-text-primary mb-3 sm:mb-4">Insights & Recommendations</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {insights.map((insight, index) => {
             const Icon = insight.icon
             return (

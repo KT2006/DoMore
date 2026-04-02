@@ -104,28 +104,32 @@ const UserPage = ({ globalUser, onBackToDashboard }) => {
   }, [focusPulse, assignmentPulse])
 
   return (
-    <div className="h-full flex flex-col min-h-0 gap-4">
-      <div className="flex items-start justify-between flex-shrink-0">
-        <div>
-          <h1 className="text-4xl font-bold text-text-primary mb-0.5">Student Profile</h1>
-          <p className="text-text-muted text-base">Your academic and contact details</p>
+    <div className="h-full flex flex-col min-h-0 gap-4 overflow-y-auto pb-6 pr-1 sm:pr-2">
+      <div className="flex flex-row items-start justify-between flex-shrink-0">
+        <div className="flex-1 pr-2 sm:pr-0">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text-primary mb-0.5 leading-tight">Student Profile</h1>
+          <p className="text-text-muted text-xs sm:text-base">Your academic and contact details</p>
         </div>
-        {onBackToDashboard && <BackButton onClick={onBackToDashboard} />}
+        {onBackToDashboard && (
+          <div className="flex-shrink-0 transform scale-90 sm:scale-100 origin-right mt-0.5 sm:mt-0">
+            <BackButton onClick={onBackToDashboard} />
+          </div>
+        )}
       </div>
 
       {/* Profile header card – same style as reference: avatar, name, reg no below name, dept */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="card-dark p-5 border border-white/20 flex items-center gap-4 flex-shrink-0"
+        className="card-dark p-4 sm:p-5 border border-white/20 flex flex-row items-center gap-3 sm:gap-4 flex-shrink-0"
       >
-        <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-text-primary font-bold text-xl flex-shrink-0">
+        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/20 flex items-center justify-center text-text-primary font-bold text-lg sm:text-xl flex-shrink-0">
           {student.initials}
         </div>
-        <div className="min-w-0">
-          <h2 className="text-2xl font-bold text-text-primary truncate">{student.name}</h2>
-          <p className="text-sm text-text-muted mt-0.5 font-mono tracking-wide">
-            REGISTRATION NO: {student.registrationNo}
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-text-primary truncate">{student.name}</h2>
+          <p className="text-xs sm:text-sm text-text-muted mt-0.5 font-mono tracking-wide truncate">
+            REG NO: {student.registrationNo}
           </p>
         </div>
       </motion.div>
@@ -140,7 +144,7 @@ const UserPage = ({ globalUser, onBackToDashboard }) => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="card-dark p-4 border border-white/20 card-hover h-full"
+              className="card-dark p-3 sm:p-4 border border-white/20 card-hover h-full"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="p-1.5 rounded-lg bg-white/10">
@@ -162,28 +166,28 @@ const UserPage = ({ globalUser, onBackToDashboard }) => {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="card-dark p-4 border border-white/20 mt-2 flex flex-col gap-3"
+        className="card-dark p-3 sm:p-4 border border-white/20 mt-2 flex flex-col gap-3 flex-shrink-0"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
           <div>
-            <h2 className="text-base font-bold text-text-primary mb-0.5">Study Streak</h2>
-            <p className="text-xs text-text-muted">Focus sessions and assignment work combined</p>
+            <h2 className="text-base sm:text-lg font-bold text-text-primary mb-0.5">Study Streak</h2>
+            <p className="text-[10px] sm:text-xs text-text-muted">Focus sessions and assignment work</p>
           </div>
-          <div className="flex gap-4 text-xs">
-            <div className="flex flex-col items-end">
-              <span className="text-text-muted">Current Streak</span>
+          <div className="flex gap-2 sm:gap-4 text-[10px] sm:text-xs bg-white/5 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-none">
+            <div className="flex flex-col flex-1 sm:flex-initial items-center sm:items-end">
+              <span className="text-text-muted text-center sm:text-right">Current</span>
               <span className="text-text-primary font-semibold">
-                {activityStats.currentStreak} day{activityStats.currentStreak === 1 ? '' : 's'}
+                {activityStats.currentStreak} d
               </span>
             </div>
-            <div className="flex flex-col items-end">
-              <span className="text-text-muted">Longest Streak</span>
+            <div className="flex flex-col flex-1 sm:flex-initial items-center sm:items-end border-l border-white/10 sm:border-0 pl-2 sm:pl-0">
+              <span className="text-text-muted text-center sm:text-right">Longest</span>
               <span className="text-text-primary font-semibold">
-                {activityStats.longestStreak} day{activityStats.longestStreak === 1 ? '' : 's'}
+                {activityStats.longestStreak} d
               </span>
             </div>
-            <div className="flex flex-col items-end">
-              <span className="text-text-muted">Active Days</span>
+            <div className="flex flex-col flex-1 sm:flex-initial items-center sm:items-end border-l border-white/10 sm:border-0 pl-2 sm:pl-0">
+              <span className="text-text-muted text-center sm:text-right">Active</span>
               <span className="text-text-primary font-semibold">
                 {activityStats.totalActiveDays}
               </span>

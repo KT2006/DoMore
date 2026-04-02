@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Calendar, AlertCircle, CheckCircle2, Clock, BookOpen, Filter, Trash2 } from 'lucide-react'
+import { Plus, Calendar, AlertCircle, CheckCircle2, Clock, BookOpen, Filter, Trash2, Zap, Target } from 'lucide-react'
 import { format, differenceInDays, isPast, isToday } from 'date-fns'
 import BackButton from './BackButton'
 import { getAssignments, addAssignment, updateAssignment, deleteAssignment } from '../services/assignmentService'
@@ -123,20 +123,24 @@ const Assignments = ({ onBackToDashboard }) => {
 
   return (
     <div className="h-full flex flex-col min-h-0 gap-3">
-      <div className="flex items-start justify-between flex-shrink-0">
-        <div>
-          <h1 className="text-4xl font-bold text-text-primary mb-0.5">Assignment Manager</h1>
-          <p className="text-text-muted text-base">Track deadlines and manage your workload</p>
+      <div className="flex flex-row items-start justify-between flex-shrink-0 mb-2 sm:mb-0">
+        <div className="flex-1 pr-1 sm:pr-0">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text-primary mb-0.5 leading-tight">Assignment Manager</h1>
+          <p className="text-text-muted text-xs sm:text-base mb-2 sm:mb-0">Track deadlines and manage your workload</p>
         </div>
-        <div className="flex items-center gap-2">
-          {onBackToDashboard && <BackButton onClick={onBackToDashboard} />}
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0">
+          {onBackToDashboard && (
+            <div className="transform scale-75 sm:scale-100 origin-right translate-x-0 mt-0 sm:mt-0">
+              <BackButton onClick={onBackToDashboard} />
+            </div>
+          )}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-white/20 text-text-primary rounded-lg font-semibold text-sm flex items-center gap-1.5 border border-white/20"
+            className="px-2.5 py-1.5 sm:px-4 sm:py-2 bg-white/20 text-text-primary rounded-lg font-semibold text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 border border-white/20 whitespace-nowrap mt-3 sm:mt-0"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Add Assignment
           </motion.button>
         </div>
@@ -163,15 +167,15 @@ const Assignments = ({ onBackToDashboard }) => {
       </div>
 
       <div className="card-dark p-2 border border-white/20 flex-shrink-0">
-        <div className="flex items-center gap-1.5 overflow-x-auto">
-          <Filter className="w-4 h-4 text-text-muted" />
+        <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-3 sm:pb-2">
+          <Filter className="w-4 h-4 text-text-muted flex-shrink-0" />
           {['all', 'pending', 'in-progress', 'completed', 'urgent', 'overdue'].map((filterOption) => (
             <motion.button
               key={filterOption}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setFilter(filterOption)}
-              className={`px-3 py-1.5 rounded-lg font-medium text-sm capitalize whitespace-nowrap transition-all ${
+              className={`px-3 py-1.5 rounded-lg font-medium text-sm capitalize whitespace-nowrap transition-all flex-shrink-0 ${
                 filter === filterOption ? 'bg-white/20 text-text-primary border border-white/30' : 'bg-white/5 text-text-muted border border-white/10 hover:border-white/20'
               }`}
             >
@@ -181,7 +185,7 @@ const Assignments = ({ onBackToDashboard }) => {
         </div>
       </div>
 
-      <div className="space-y-2 flex-1 min-h-0 overflow-hidden">
+      <div className="space-y-2 flex-1 min-h-[150px] overflow-y-auto custom-scrollbar pr-1">
         <AnimatePresence>
           {sortedAssignments.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-dark p-8 text-center border border-white/20">
@@ -290,6 +294,72 @@ const Assignments = ({ onBackToDashboard }) => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Real-time Insights */}
+      <div className="flex-shrink-0 card-dark p-3 border border-white/20 mt-1 mb-1">
+        <h2 className="text-[11px] sm:text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Insights & Recommendations</h2>
+        <div className="flex flex-col sm:flex-row gap-2">
+          {filteredAssignments.filter(a => getDaysUntilDue(a.dueDate) < 0 && a.status !== 'completed').length > 0 ? (
+            <div className="flex-1 flex gap-2 items-start bg-accent-red/10 border border-accent-red/20 p-2 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-accent-red flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-xs font-bold text-accent-red">Action Required</h3>
+                <p className="text-[10px] text-text-muted mt-0.5">You have {filteredAssignments.filter(a => getDaysUntilDue(a.dueDate) < 0 && a.status !== 'completed').length} overdue assignments. Tackle them first!</p>
+              </div>
+            </div>
+          ) : filteredAssignments.filter(a => a.status === 'pending').length > 0 ? (
+            <div className="flex-1 flex gap-2 items-start bg-accent-orange/10 border border-accent-orange/20 p-2 rounded-lg">
+              <Clock className="w-4 h-4 text-accent-orange flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-xs font-bold text-accent-orange">Prioritize Pending</h3>
+                <p className="text-[10px] text-text-muted mt-0.5">You have {filteredAssignments.filter(a => a.status === 'pending').length} assignments pending. Start working on them early to avoid stress.</p>
+              </div>
+            </div>
+          ) : filteredAssignments.length > 0 && filteredAssignments.every(a => a.status === 'completed') ? (
+            <div className="flex-1 flex gap-2 items-start bg-accent-green/10 border border-accent-green/20 p-2 rounded-lg">
+              <CheckCircle2 className="w-4 h-4 text-accent-green flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-xs font-bold text-accent-green">All Cleared!</h3>
+                <p className="text-[10px] text-text-muted mt-0.5">Amazing job, everything here is completed. You're fully caught up.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex gap-2 items-start bg-white/5 border border-white/10 p-2 rounded-lg">
+              <BookOpen className="w-4 h-4 text-text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-xs font-bold text-text-primary">Plan Ahead</h3>
+                <p className="text-[10px] text-text-muted mt-0.5">Use the 'Add Assignment' button to track upcoming course workloads.</p>
+              </div>
+            </div>
+          )}
+          
+          {filteredAssignments.some(a => a.status === 'in-progress') ? (
+            <div className="flex-1 flex gap-2 items-start bg-accent-blue/10 border border-accent-blue/20 p-2 rounded-lg">
+              <Target className="w-4 h-4 text-accent-blue flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-xs font-bold text-accent-blue">Stay Focused</h3>
+                <p className="text-[10px] text-text-muted mt-0.5">Finish the {filteredAssignments.filter(a => a.status === 'in-progress').length} task(s) currently in progress before starting new ones.</p>
+              </div>
+            </div>
+          ) : filteredAssignments.length > 0 && filteredAssignments.every(a => a.status !== 'in-progress' && a.status !== 'completed') ? (
+            <div className="flex-1 flex gap-2 items-start bg-white/5 border border-white/10 p-2 rounded-lg">
+              <Zap className="w-4 h-4 text-text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-xs font-bold text-text-primary">Ready to Go</h3>
+                <p className="text-[10px] text-text-muted mt-0.5">Select a pending task and mark it 'In Progress' to begin working.</p>
+              </div>
+            </div>
+          ) : (
+             <div className="flex-1 flex gap-2 items-start bg-white/5 border border-white/10 p-2 rounded-lg hidden sm:flex">
+              <Zap className="w-4 h-4 text-text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-xs font-bold text-text-primary">Keep it up!</h3>
+                <p className="text-[10px] text-text-muted mt-0.5">You're making great progress. Stay consistent.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
       
       <AnimatePresence>
         {showAddModal && (
@@ -297,13 +367,13 @@ const Assignments = ({ onBackToDashboard }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 flex items-center justify-center bg-black/60"
+            className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md card-dark border border-white/20 p-4"
+              className="w-full max-w-md card-dark border border-white/20 p-4 sm:p-5"
             >
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-bold text-text-primary">Add Assignment</h2>

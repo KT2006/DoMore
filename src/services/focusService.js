@@ -1,7 +1,7 @@
 // src/services/focusService.js
 // Firestore + localStorage fallback when Firebase is unavailable or denied.
 
-import { collection, addDoc, getDocs, orderBy, query } from 'firebase/firestore'
+import { collection, addDoc, getDocs, orderBy, query, where, updateDoc, doc } from 'firebase/firestore'
 import { db } from '../firebase'
 
 const localKey = (reg_no) => `focusSessions:${reg_no}`
@@ -46,25 +46,59 @@ function writeLocalFocusSessions(reg_no, sessions) {
 
 export async function saveFocusSession(reg_no, session) {
   const completedAt = session.timestamp || new Date().toISOString()
+  const dateStr = new Date().toDateString()
   const base = {
     subject: session.subject,
-    duration: session.duration,
     effort: session.effort,
     timestamp: completedAt,
     completed_at: completedAt,
-    date: new Date().toDateString(),
+    date: dateStr,
   }
+  
   let id = session.id ? String(session.id) : `local_${Date.now()}`
+  let finalDuration = session.duration
+  
   try {
-    const col = collection(db, 'students', reg_no, 'focus_sessions')
-    const ref = await addDoc(col, base)
-    id = ref.id
+    const colRef = collection(db, 'students', reg_no, 'focus_sessions')
+    const q = query(colRef, where('date', '==', dateStr), where('subject', '==', session.subject))
+    const snap = await getDocs(q)
+    
+    if (!snap.empty) {
+      const existingDoc = snap.docs[0]
+      const existingData = existingDoc.data()
+      id = existingDoc.id
+      finalDuration += (existingData.duration || 0)
+      
+      await updateDoc(doc(db, 'students', reg_no, 'focus_sessions', id), {
+        duration: finalDuration,
+        effort: session.effort,
+        timestamp: completedAt,
+        completed_at: completedAt
+      })
+    } else {
+      base.duration = finalDuration
+      const ref = await addDoc(colRef, base)
+      id = ref.id
+    }
   } catch (e) {
     console.warn('[Focus] Firestore save failed; session saved locally only.', e)
+    base.duration = finalDuration
   }
-  const entry = normalizeFocusSession({ id, ...base })
-  const prev = readLocalFocusSessions(reg_no).filter((s) => String(s.id) !== id)
-  writeLocalFocusSessions(reg_no, [entry, ...prev])
+  
+  const allSessions = readLocalFocusSessions(reg_no)
+  const existingIndex = allSessions.findIndex(s => s.subject === session.subject && s.date === dateStr)
+  
+  if (existingIndex >= 0) {
+    allSessions[existingIndex].duration += session.duration
+    allSessions[existingIndex].timestamp = completedAt
+    allSessions[existingIndex].completed_at = completedAt
+    allSessions[existingIndex].effort = session.effort
+    writeLocalFocusSessions(reg_no, allSessions)
+  } else {
+    const entry = normalizeFocusSession({ id, ...base })
+    const prev = allSessions.filter((s) => String(s.id) !== id)
+    writeLocalFocusSessions(reg_no, [entry, ...prev])
+  }
 }
 
 export async function getFocusSessions(reg_no) {

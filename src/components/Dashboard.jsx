@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Clock, Target, TrendingUp, Calendar, Sparkles, BookOpen } from 'lucide-react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { getColorClasses } from '../utils/colorUtils'
 import Profile from './Profile'
 import { getFocusSessions, getFocusSessionTime } from '../services/focusService'
@@ -123,17 +123,17 @@ const Dashboard = ({ globalUser, onNavigate }) => {
   ]
 
   return (
-    <div className="h-full flex flex-col min-h-0 gap-3">
+    <div className="h-full flex flex-col min-h-0 gap-4 sm:gap-5 lg:gap-6 overflow-y-auto pb-6 pr-1 sm:pr-2">
       {/* Header */}
-      <div className="flex items-center justify-between flex-shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 flex-shrink-0">
         <div>
-          <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-4xl font-bold text-text-primary mb-0.5">Welcome back</motion.h1>
-          <p className="text-text-muted text-base">Here's your productivity overview</p>
+          <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text-primary mb-1">Welcome back</motion.h1>
+          <p className="text-text-muted text-sm sm:text-base">Here's your productivity overview</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-dark border border-white/20">
-            <Sparkles className="w-4 h-4 text-accent-green" />
-            <span className="text-text-primary text-sm font-medium">Focus Streak: 7 days</span>
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-accent-green" />
+            <span className="text-text-primary text-xs sm:text-sm font-medium">Focus Streak: 7 days</span>
             <span className="text-accent-orange">🔥</span>
           </motion.div>
           <Profile user={globalUser} />
@@ -141,7 +141,7 @@ const Dashboard = ({ globalUser, onNavigate }) => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 flex-shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 flex-shrink-0">
         {stats.map((stat, index) => {
           const Icon = stat.icon
           const colors = getColorClasses(stat.color)
@@ -162,36 +162,36 @@ const Dashboard = ({ globalUser, onNavigate }) => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className={`card-dark p-4 border ${isRed ? 'bg-accent-red border-accent-red' : ''} ${!isRed ? colors.borderMedium : ''} card-hover ${onNavigate ? 'cursor-pointer' : ''}`}
+              className={`card-dark p-3 sm:p-4 lg:p-5 border ${isRed ? 'bg-accent-red border-accent-red' : ''} ${!isRed ? colors.borderMedium : ''} card-hover ${onNavigate ? 'cursor-pointer' : ''}`}
               onClick={handleCardClick}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className={`p-1.5 rounded-lg ${isRed ? 'bg-white/20' : colors.bgLight}`}>
-                  <Icon className={`w-4 h-4 ${isRed ? 'text-white' : colors.text}`} />
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className={`p-1.5 sm:p-2 rounded-lg ${isRed ? 'bg-white/20' : colors.bgLight}`}>
+                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isRed ? 'text-white' : colors.text}`} />
                 </div>
                 {!isRed && stat.change && (
-                  <span className="text-xs font-semibold text-text-muted">{stat.change}</span>
+                  <span className="text-[10px] sm:text-xs font-semibold text-text-muted">{stat.change}</span>
                 )}
               </div>
-              <h3 className={`text-2xl font-bold mb-0.5 ${isRed ? 'text-white' : 'text-text-primary'}`}>{stat.value}</h3>
-              <p className={`text-xs text-text-muted ${isRed ? 'text-white/90' : ''}`}>{stat.label}</p>
+              <h3 className={`text-xl sm:text-2xl lg:text-3xl font-bold mb-0.5 ${isRed ? 'text-white' : 'text-text-primary'}`}>{stat.value}</h3>
+              <p className={`text-[11px] sm:text-xs lg:text-sm text-text-muted ${isRed ? 'text-white/90' : ''}`}>{stat.label}</p>
             </motion.div>
           )
         })}
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 flex-shrink-0">
         <motion.div
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
-          className="card-dark p-4 border border-white/20 card-hover flex flex-col min-h-0 cursor-pointer"
+          className="card-dark p-4 sm:p-5 border border-white/20 card-hover flex flex-col min-h-[300px] sm:min-h-[320px] cursor-pointer"
           onClick={() => onNavigate && onNavigate('analytics')}
         >
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-bold text-text-primary">Weekly Focus Trend</h2>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-lg lg:text-xl font-bold text-text-primary">Weekly Focus Trend</h2>
           </div>
-          <div className="flex-1 min-h-[140px]">
+          <div className="flex-1 min-h-[220px] w-full mt-2">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={weeklyData}>
                 <defs>
@@ -213,26 +213,22 @@ const Dashboard = ({ globalUser, onNavigate }) => {
         <motion.div
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
-          className="card-dark p-4 border border-white/20 card-hover flex flex-col min-h-0 cursor-pointer"
+          className="card-dark p-4 sm:p-5 border border-white/20 card-hover flex flex-col min-h-[300px] sm:min-h-[320px] cursor-pointer"
           onClick={() => onNavigate && onNavigate('analytics')}
         >
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-bold text-text-primary">Subject Distribution</h2>
-            <BookOpen className="w-4 h-4 text-text-muted" />
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-lg lg:text-xl font-bold text-text-primary">Subject Distribution</h2>
+            <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-text-muted" />
           </div>
-          <div className="flex-1 min-h-[140px]">
+          <div className="flex-1 min-h-[220px] w-full mt-2">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={subjectDistribution}
                   cx="50%" cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) =>
-                    subjectDistributionRaw.length > 0
-                      ? `${name}: ${(percent * 100).toFixed(0)}%`
-                      : name
-                  }
-                  outerRadius={60}
+                  outerRadius="80%"
+                  innerRadius="60%"
+                  stroke="none"
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -240,7 +236,12 @@ const Dashboard = ({ globalUser, onNavigate }) => {
                     <Cell key={i} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#141414', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#fff' }} />
+                <Legend
+                  verticalAlign="bottom"
+                  height={36}
+                  iconType="circle"
+                  wrapperStyle={{ fontSize: '11px', color: '#9CA3AF' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -248,31 +249,31 @@ const Dashboard = ({ globalUser, onNavigate }) => {
       </div>
 
       {/* Recent Sessions & Deadlines */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 flex-shrink-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 flex-shrink-0">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card-dark p-4 border border-white/20 card-hover cursor-pointer"
+          className="card-dark p-4 sm:p-5 border border-white/20 card-hover cursor-pointer"
           onClick={() => onNavigate && onNavigate('focus')}
         >
-          <h2 className="text-lg font-bold text-text-primary mb-2">Recent Focus Sessions</h2>
-          <div className="space-y-2">
+          <h2 className="text-base sm:text-lg lg:text-xl font-bold text-text-primary mb-3 sm:mb-4">Recent Focus Sessions</h2>
+          <div className="space-y-3">
             {todaySessions.slice(0, 3).map((session, index) => {
               const color =
                 session.effort === 'high' ? 'mint' : session.effort === 'medium' ? 'cyan' : 'amber'
               const timeAgo = 'Today'
               return (
-              <div key={index} className="p-2.5 bg-white/5 rounded-lg border border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${getColorClasses(color).bgLight} ${getColorClasses(color).text}`}>
+              <div key={index} className="p-3 sm:p-3.5 bg-white/5 rounded-xl border border-white/10 flex items-center justify-between transition-colors hover:bg-white/10">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-sm sm:text-base font-bold shadow-sm ${getColorClasses(color).bgLight} ${getColorClasses(color).text}`}>
                     {session.subject?.[0] || '?'}
                   </div>
                   <div>
-                    <p className="font-semibold text-text-primary text-sm">{session.subject}</p>
-                    <p className="text-xs text-text-muted">{timeAgo}</p>
+                    <p className="font-semibold text-text-primary text-sm sm:text-base line-clamp-1">{session.subject}</p>
+                    <p className="text-xs sm:text-sm text-text-muted">{timeAgo}</p>
                   </div>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                <span className={`text-[10px] sm:text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${
                   session.effort === 'high' ? 'bg-accent-green/20 text-accent-green' :
                   session.effort === 'medium' ? 'bg-accent-blue/20 text-accent-blue' :
                   'bg-accent-orange/20 text-accent-orange'
@@ -280,7 +281,9 @@ const Dashboard = ({ globalUser, onNavigate }) => {
               </div>
             )})}
             {todaySessions.length === 0 && (
-              <p className="text-xs text-text-muted">No focus sessions logged today yet.</p>
+              <div className="p-4 text-center rounded-xl bg-white/5 border border-white/10">
+                <p className="text-sm text-text-muted">No focus sessions logged today yet.</p>
+              </div>
             )}
           </div>
         </motion.div>
@@ -288,16 +291,16 @@ const Dashboard = ({ globalUser, onNavigate }) => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card-dark p-4 border border-white/20 card-hover cursor-pointer"
+          className="card-dark p-4 sm:p-5 border border-white/20 card-hover cursor-pointer"
           onClick={() => onNavigate && onNavigate('assignments')}
         >
-          <h2 className="text-lg font-bold text-text-primary mb-2">Upcoming Deadlines</h2>
-          <div className="space-y-2">
+          <h2 className="text-base sm:text-lg lg:text-xl font-bold text-text-primary mb-3 sm:mb-4">Upcoming Deadlines</h2>
+          <div className="space-y-3">
             {upcomingAssignments.slice(0, 3).map((item, index) => {
               const daysLeft = Math.ceil(
                 (item.dueDate - now) / (1000 * 60 * 60 * 24)
               )
-              const dueLabel = daysLeft === 0 ? 'Due today' : `Due in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`
+              const dueLabel = daysLeft <= 0 ? 'Due today' : `Due in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`
               const priorityLabel =
                 item.priority === 'high'
                   ? 'High'
@@ -305,18 +308,24 @@ const Dashboard = ({ globalUser, onNavigate }) => {
                   ? 'Medium'
                   : 'Low'
               return (
-              <div key={item.id} className={`p-2.5 rounded-lg border flex items-center justify-between ${index === 0 ? 'bg-accent-blue/10 border-accent-blue/40' : 'bg-white/5 border-white/10'}`}>
-                <div>
-                  <p className="font-semibold text-text-primary text-sm">{item.title}</p>
-                  <p className="text-xs text-text-muted">{dueLabel}</p>
+              <div key={item.id} className={`p-3 sm:p-3.5 rounded-xl border flex items-center justify-between transition-colors ${index === 0 ? 'bg-accent-blue/10 border-accent-blue/40 hover:bg-accent-blue/20' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                <div className="flex-1 mr-2">
+                  <p className="font-semibold text-text-primary text-sm sm:text-base line-clamp-1">{item.title}</p>
+                  <p className={`text-xs sm:text-sm mt-0.5 ${daysLeft <= 0 ? 'text-accent-red font-semibold' : 'text-text-muted'}`}>{dueLabel}</p>
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-accent-blue/20 text-accent-blue">
+                <span className={`flex-shrink-0 text-[10px] sm:text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${
+                  item.priority === 'high' ? 'bg-accent-red/20 text-accent-red' :
+                  item.priority === 'medium' ? 'bg-accent-amber/20 text-accent-amber' :
+                  'bg-accent-blue/20 text-accent-blue'
+                }`}>
                   {priorityLabel}
                 </span>
               </div>
             )})}
             {upcomingAssignments.length === 0 && (
-              <p className="text-xs text-text-muted">No upcoming deadlines.</p>
+              <div className="p-4 text-center rounded-xl bg-white/5 border border-white/10">
+                <p className="text-sm text-text-muted">No upcoming deadlines.</p>
+              </div>
             )}
           </div>
         </motion.div>

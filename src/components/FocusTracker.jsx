@@ -15,28 +15,23 @@ const FocusTracker = ({ onBackToDashboard }) => {
   const [sessions, setSessions] = useState([])
   const [mode, setMode] = useState('focus') // focus, shortBreak, longBreak
 
-  const subjects = [
-    'Mathematics', 'Computer Science', 'Physics', 'Chemistry', 
-    'English', 'Data Structures', 'Algorithms', 'Other'
-  ]
-
   const modes = {
-    focus: { duration: focusMinutes * 60, label: 'Focus', color: 'mint', icon: '🎯' },
-    shortBreak: { duration: 5 * 60, label: 'Short Break', color: 'cyan', icon: '☕' },
-    longBreak: { duration: 15 * 60, label: 'Long Break', color: 'pink', icon: '🌙' },
+    focus: { duration: (Number(focusMinutes) || 25) * 60, label: 'Focus', color: 'mint' },
+    shortBreak: { duration: 5 * 60, label: 'Short Break', color: 'cyan' },
+    longBreak: { duration: 15 * 60, label: 'Long Break', color: 'pink' },
   }
 
   useEffect(() => {
     // Load saved preferred focus length
     try {
-      const saved = localStorage.getItem('focusMinutes')
-      if (saved) {
-        const v = Math.min(60, Math.max(10, Number(saved) || 25))
+      const savedLength = localStorage.getItem('focusMinutes')
+      if (savedLength) {
+        const v = Math.min(120, Math.max(1, Number(savedLength) || 25))
         setFocusMinutes(v)
         setSeconds(v * 60)
       }
     } catch (e) {
-      console.error('Failed to load focusMinutes', e)
+      console.error('Failed to load local settings', e)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -76,28 +71,40 @@ const FocusTracker = ({ onBackToDashboard }) => {
     return () => clearInterval(interval)
   }, [isRunning, seconds])
 
-  const handleComplete = async () => {
-    if (mode === 'focus' && selectedSubject) {
+  const handleComplete = async (isEarlyStop = false) => {
+    const elapsedSeconds = modes[mode].duration - seconds;
+    
+    if (mode === 'focus' && selectedSubject && elapsedSeconds > 0) {
       const newSession = {
         id: Date.now().toString(),
         subject: selectedSubject,
-        duration: focusMinutes * 60,
+        duration: elapsedSeconds,
         effort: effortLevel,
         timestamp: new Date().toISOString(),
       }
-      const updated = [newSession, ...sessions]
-      setSessions(updated)
+      
+      const todayStr = new Date().toDateString();
+      setSessions(prev => {
+         const existingIndex = prev.findIndex(s => s.subject === selectedSubject && new Date(s.timestamp || s.completed_at || new Date()).toDateString() === todayStr);
+         if (existingIndex >= 0) {
+            const copy = [...prev];
+            copy[existingIndex] = { ...copy[existingIndex], duration: (copy[existingIndex].duration || 0) + elapsedSeconds, effort: effortLevel, timestamp: newSession.timestamp };
+            const updatedItem = copy.splice(existingIndex, 1)[0];
+            return [updatedItem, ...copy];
+         }
+         return [newSession, ...prev];
+      })
+
       try {
         await saveFocusSession(reg_no, newSession)
       } catch (e) {
         console.error('Failed to save focus session', e)
       }
     }
+    
     setIsRunning(false)
-    // Auto switch to break after focus
-    if (mode === 'focus') {
-      setMode('shortBreak')
-    }
+    setSelectedSubject('')
+    setSeconds(modes[mode].duration)
   }
 
   const formatTime = (totalSeconds) => {
@@ -132,70 +139,85 @@ const FocusTracker = ({ onBackToDashboard }) => {
   const colorClasses = getColorClasses(currentMode.color)
   const strokeColor = currentMode.color === 'mint' ? '#22C55E' : currentMode.color === 'cyan' ? '#3B82F6' : '#EC4899'
 
+  const todaySessions = Object.values(sessions.reduce((acc, s) => {
+    const sDate = new Date(s.timestamp || s.completed_at || new Date()).toDateString();
+    if (sDate === new Date().toDateString() && s.subject) {
+      if (!acc[s.subject]) {
+        acc[s.subject] = { ...s };
+      } else {
+        acc[s.subject].duration += (s.duration || 0);
+        const t1 = new Date(acc[s.subject].timestamp).getTime();
+        const t2 = new Date(s.timestamp).getTime();
+        acc[s.subject].timestamp = new Date(t1 > t2 ? t1 : t2).toISOString();
+      }
+    }
+    return acc;
+  }, {})).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
   return (
-    <div className="h-full flex flex-col min-h-0 gap-3">
-      <div className="flex items-start justify-between flex-shrink-0">
-        <div>
-          <h1 className="text-4xl font-bold text-text-primary mb-0.5">Focus Timer</h1>
-          <p className="text-text-muted text-base">Pomodoro technique for sustained productivity</p>
+    <div className="h-full flex flex-col min-h-0 gap-4 sm:gap-5 lg:gap-6 overflow-y-auto pb-6 pr-1 sm:pr-2">
+      <div className="flex items-center justify-between flex-shrink-0 gap-2 sm:gap-4 w-full">
+        <div className="flex-1 min-w-0 pr-2">
+          <h1 className="text-xl min-[380px]:text-2xl sm:text-3xl lg:text-4xl font-bold text-text-primary mb-0.5 sm:mb-1 truncate">Focus Timer</h1>
+          <p className="text-text-muted text-[10px] min-[380px]:text-xs sm:text-sm truncate">Pomodoro technique for sustained productivity</p>
         </div>
-        {onBackToDashboard && <BackButton onClick={onBackToDashboard} />}
+        {onBackToDashboard && <div className="flex-shrink-0"><BackButton onClick={onBackToDashboard} /></div>}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 flex-1 min-h-0">
+      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 flex-none lg:flex-1 lg:min-h-0">
         {/* Timer Card */}
         <motion.div
           initial={{ scale: 0.98, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="lg:col-span-2 card-dark p-5 border border-white/20 flex flex-col"
+          className="lg:col-span-2 card-dark p-4 sm:p-5 lg:p-6 border border-white/20 flex flex-col"
         >
           {/* Mode Selector */}
-          <div className="flex flex-col items-center gap-3 mb-4">
-            <div className="flex justify-center gap-2">
+          <div className="flex flex-col items-center gap-3 sm:gap-4 mb-5 sm:mb-6 w-full">
+            <div className="flex flex-row justify-center gap-1.5 sm:gap-2 w-full sm:w-auto">
             {Object.entries(modes).map(([key, value]) => (
               <motion.button
                 key={key}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
-                  if (!isRunning) {
-                    setMode(key)
-                    setSeconds(value.duration)
-                  }
+                  if (isRunning) setIsRunning(false)
+                  setMode(key)
+                  setSeconds(value.duration)
                 }}
-                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                className={`flex-1 sm:flex-none px-2 sm:px-4 py-2 rounded-lg font-semibold text-[10px] min-[380px]:text-xs sm:text-sm transition-all flex items-center justify-center min-w-0 ${
                   mode === key
                     ? `${getColorClasses(value.color).bgMedium} ${getColorClasses(value.color).text} border ${getColorClasses(value.color).borderMedium}`
                     : 'bg-white/5 text-text-muted border border-white/10 hover:border-white/20'
                 }`}
               >
-                <span className="mr-1">{value.icon}</span>
-                {value.label}
+                {value.icon && <span className="mr-1 sm:mr-1.5 flex-shrink-0">{value.icon}</span>}
+                <span className="truncate">{value.label}</span>
               </motion.button>
             ))}
             </div>
-            <div className="flex items-center gap-2 text-xs text-text-muted">
+            <div className="flex items-center justify-center gap-2 text-[11px] sm:text-xs text-text-muted bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
               <span>Focus length:</span>
               <input
                 type="number"
-                min="10"
-                max="60"
                 value={focusMinutes}
-                onChange={(e) => {
-                  const v = Math.min(60, Math.max(10, Number(e.target.value) || 25))
-                  setFocusMinutes(v)
+                onChange={(e) => setFocusMinutes(e.target.value)}
+                onBlur={() => {
+                  let v = Number(focusMinutes);
+                  if (isNaN(v) || v < 1) v = 25;
+                  if (v > 120) v = 120;
+                  setFocusMinutes(v);
                 }}
-                className="w-14 px-2 py-1 rounded bg-midnight border border-white/20 text-text-primary text-xs outline-none"
+                className="w-12 sm:w-14 px-1.5 py-0.5 rounded bg-midnight border border-white/20 text-text-primary text-[11px] sm:text-xs outline-none text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <span>minutes</span>
             </div>
           </div>
 
           {/* Circular Timer */}
-          <div className="flex justify-center mb-4">
-            <div className="relative w-48 h-48">
-              <svg className="transform -rotate-90 w-48 h-48">
-                <circle cx="96" cy="96" r="90" stroke="currentColor" strokeWidth="6" fill="none" className="text-white/10" />
+          <div className="flex justify-center mb-6 sm:mb-8">
+            <div className="relative w-44 h-44 min-[380px]:w-48 min-[380px]:h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 flex items-center justify-center">
+              <svg className="transform -rotate-90 w-full h-full absolute inset-0" viewBox="0 0 192 192">
+                <circle cx="96" cy="96" r="90" stroke="currentColor" strokeWidth="4" fill="none" className="text-white/10" />
                 <motion.circle
                   cx="96" cy="96" r="90"
                   stroke={strokeColor}
@@ -209,60 +231,58 @@ const FocusTracker = ({ onBackToDashboard }) => {
                   transition={{ duration: 1, ease: "linear" }}
                 />
               </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className={`text-4xl font-bold font-mono ${colorClasses.text} mb-0.5`}>{formatTime(seconds)}</div>
-                <p className="text-text-muted text-xs">{currentMode.label} Session</p>
+              <div className="relative flex flex-col items-center justify-center z-10 w-full">
+                <div className={`text-4xl sm:text-5xl lg:text-6xl font-bold font-mono ${colorClasses.text} mb-1 sm:mb-2 tracking-tight`}>{formatTime(seconds)}</div>
+                <p className="text-text-muted text-[10px] sm:text-xs tracking-wide uppercase font-semibold">{currentMode.label} Session</p>
               </div>
             </div>
           </div>
 
           {/* Controls */}
-          <div className="flex justify-center gap-2 mb-4">
+          <div className="flex flex-row flex-wrap sm:flex-nowrap justify-center gap-2 sm:gap-4 w-full mb-6 sm:mb-8 px-2 sm:px-0">
             {!isRunning ? (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleStart}
-                className={`px-5 py-2.5 ${colorClasses.bg} text-white rounded-lg font-semibold text-sm flex items-center gap-1.5`}
+                className={`w-full sm:w-auto px-6 py-3 sm:py-2.5 ${colorClasses.bg} text-white rounded-xl sm:rounded-lg font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg ${currentMode.color === 'mint' ? 'shadow-accent-green/20' : currentMode.color === 'cyan' ? 'shadow-accent-blue/20' : 'shadow-accent-pink/20'}`}
               >
-                <Play className="w-4 h-4" />
+                <Play className="w-5 h-5 sm:w-4 sm:h-4" fill="currentColor" />
                 Start Session
               </motion.button>
             ) : (
               <>
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleStop} className="px-5 py-2.5 bg-accent-orange text-white rounded-lg font-semibold text-sm flex items-center gap-1.5">
-                  <Pause className="w-4 h-4" /> Pause
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleStop} className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-3 sm:py-2.5 bg-accent-orange text-white rounded-xl sm:rounded-lg font-bold text-[11px] sm:text-base flex items-center justify-center gap-1.5 shadow-lg shadow-accent-orange/20 min-w-0">
+                  <Pause className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" /> <span className="truncate">Pause</span>
                 </motion.button>
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleReset} className="px-5 py-2.5 bg-white/10 text-text-primary rounded-lg font-semibold text-sm border border-white/20">
-                  <Square className="w-4 h-4" /> Reset
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => handleComplete(true)} className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-3 sm:py-2.5 bg-[#EF4444] text-white rounded-xl sm:rounded-lg font-bold text-[11px] sm:text-base flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/20 min-w-0">
+                  <Square className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" /> <span className="truncate">End Session</span>
+                </motion.button>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleReset} className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-6 py-3 sm:py-2.5 bg-white/10 text-text-primary rounded-xl sm:rounded-lg font-bold text-[11px] sm:text-base border border-white/20 flex items-center justify-center gap-1.5 hover:bg-white/15 transition-colors min-w-0">
+                  <Square className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 outline-none" fill="none" /> <span className="truncate">Reset</span>
                 </motion.button>
               </>
             )}
           </div>
 
+          <div className="flex-1" />
+
+          {/* Extra options only shown in focus mode */}
           {mode === 'focus' && (
-            <>
-              <div className="mb-3">
-                <label className="block text-xs font-semibold text-text-primary mb-1.5">Select Subject</label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {subjects.map((subject) => (
-                    <motion.button
-                      key={subject}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedSubject(subject)}
-                      className={`p-2 rounded-lg font-medium text-xs transition-all ${
-                        selectedSubject === subject ? 'bg-white/20 text-text-primary border border-white/30' : 'bg-white/5 text-text-muted border border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      {subject}
-                    </motion.button>
-                  ))}
-                </div>
+            <div className="flex flex-col gap-4 lg:gap-6 mt-auto border-t border-white/10 pt-4 sm:pt-6">
+              <div className="flex flex-col gap-3">
+                <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">Subject</label>
+                <input
+                  type="text"
+                  placeholder="What are you working on?"
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  className="w-full px-4 py-2 sm:py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-text-muted text-sm outline-none focus:border-white/30 transition-colors"
+                />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-primary mb-1.5">Effort Level</label>
-                <div className="flex gap-2">
+                <label className="block text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider">Effort Level</label>
+                <div className="flex gap-1.5 sm:gap-2 w-full">
                   {[
                     { value: 'low', label: 'Low', icon: '😌', color: 'mint' },
                     { value: 'medium', label: 'Medium', icon: '😊', color: 'cyan' },
@@ -273,19 +293,19 @@ const FocusTracker = ({ onBackToDashboard }) => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setEffortLevel(level.value)}
-                      className={`flex-1 p-2 rounded-lg font-medium text-xs transition-all flex items-center justify-center gap-1 ${
+                      className={`flex-1 p-2 rounded-lg font-medium text-[10px] min-[380px]:text-[11px] sm:text-xs transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 min-h-[56px] sm:min-h-[44px] min-w-0 overflow-hidden ${
                         effortLevel === level.value
-                          ? getColorClasses(level.color).bgMedium + ' ' + getColorClasses(level.color).text + ' border ' + getColorClasses(level.color).borderMedium
+                          ? getColorClasses(level.color).bgMedium + ' ' + getColorClasses(level.color).text + ' border ' + getColorClasses(level.color).borderMedium + ' shadow-sm'
                           : 'bg-white/5 text-text-muted border border-white/10 hover:border-white/20'
                       }`}
                     >
-                      <span className="text-lg">{level.icon}</span>
-                      <span>{level.label}</span>
+                      <span className="text-lg sm:text-xl flex-shrink-0">{level.icon}</span>
+                      <span className="truncate w-full inline-block">{level.label}</span>
                     </motion.button>
                   ))}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </motion.div>
 
@@ -294,51 +314,54 @@ const FocusTracker = ({ onBackToDashboard }) => {
           initial={{ scale: 0.98, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="card-dark p-4 border border-white/20 flex flex-col min-h-0"
+          className="card-dark p-4 sm:p-5 lg:p-6 border border-white/20 flex flex-col min-h-[300px] lg:min-h-0"
         >
-          <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
-            <Clock className="w-4 h-4 text-text-primary" />
-            <h2 className="text-lg font-bold text-text-primary">Today's Sessions</h2>
+          <div className="flex items-center gap-2 mb-4 flex-shrink-0 border-b border-white/10 pb-3">
+            <Clock className="w-5 h-5 text-accent-blue" />
+            <h2 className="text-base sm:text-lg lg:text-xl font-bold text-text-primary">Today's Sessions</h2>
           </div>
           
-          <div className="space-y-2 flex-1 min-h-0 overflow-hidden">
+          <div className="space-y-3 flex-1 min-h-0 lg:overflow-y-auto custom-scrollbar pr-1">
             <AnimatePresence>
-              {sessions.length === 0 ? (
-                <div className="text-center py-4 text-text-muted text-sm">
-                  <BookOpen className="w-8 h-8 mx-auto mb-1 opacity-50" />
-                  <p>No sessions yet</p>
+              {todaySessions.length === 0 ? (
+                <div className="text-center py-8 text-text-muted text-sm flex flex-col items-center justify-center h-full">
+                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                    <BookOpen className="w-6 h-6 opacity-40" />
+                  </div>
+                  <p>No sessions logged yet</p>
+                  <p className="text-[10px] mt-1 opacity-60">Start a timer to see your history</p>
                 </div>
               ) : (
-                sessions.slice(0, 5).map((session) => (
+                todaySessions.slice(0, 8).map((session) => (
                   <motion.div
-                    key={session.id}
+                    key={session.id || session.subject}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
-                    className="p-2 bg-white/5 rounded-lg border border-white/10"
+                    className="p-3 bg-white/5 hover:bg-white/10 transition-colors rounded-xl border border-white/10"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-text-primary text-sm">{session.subject}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-text-primary text-xs sm:text-sm truncate flex-1 min-w-0">{session.subject}</span>
+                      <span className={`flex-shrink-0 text-[9px] sm:text-[10px] md:text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                         session.effort === 'high' ? 'bg-accent-green/20 text-accent-green' :
                         session.effort === 'medium' ? 'bg-accent-blue/20 text-accent-blue' :
                         'bg-accent-orange/20 text-accent-orange'
                       }`}>{session.effort}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-text-muted mt-0.5">
+                    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-text-muted mt-2 bg-white/5 w-max px-2 py-1 rounded-md">
                       <Clock className="w-3 h-3" />
-                      <span>{formatTime(session.duration)}</span>
+                      <span className="font-mono">{formatTime(session.duration)}</span>
                     </div>
                   </motion.div>
                 ))
               )}
             </AnimatePresence>
           </div>
-          {sessions.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-white/10 flex-shrink-0">
-              <div className="flex justify-between text-xs">
-                <span className="text-text-muted">Total Today</span>
-                <span className="font-bold text-text-primary">{formatTime(sessions.reduce((acc, s) => acc + s.duration, 0))}</span>
+          {todaySessions.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-white/10 flex-shrink-0 bg-indigo-dark/50 -mx-4 -mb-4 px-4 py-3 sm:-mx-5 sm:-mb-5 sm:px-5 sm:py-4 lg:-mx-6 lg:-mb-6 lg:px-6 lg:py-4 rounded-b-2xl">
+              <div className="flex justify-between items-center">
+                <span className="text-xs sm:text-sm font-semibold text-text-muted uppercase tracking-wider">Total Focus Today</span>
+                <span className="text-lg sm:text-xl font-bold font-mono text-accent-blue">{formatTime(todaySessions.reduce((acc, s) => acc + s.duration, 0))}</span>
               </div>
             </div>
           )}

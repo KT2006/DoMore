@@ -173,6 +173,7 @@ function App() {
                 className="lg:hidden fixed left-0 top-0 h-full w-64 bg-indigo-dark border-r border-white/20 z-50"
               >
                 <Sidebar
+                  isMobile={true}
                   activeTab={activeTab}
                   setActiveTab={(tab) => {
                     setActiveTab(tab)
@@ -186,7 +187,7 @@ function App() {
           )}
         </AnimatePresence>
 
-        <main className="flex-1 lg:ml-64 p-4 lg:p-5 overflow-hidden min-w-0 flex flex-col min-h-0">
+        <main className="flex-1 lg:ml-64 p-4 pt-20 lg:p-5 overflow-hidden min-w-0 flex flex-col min-h-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { Zap, LogOut } from 'lucide-react'
 
-const Sidebar = ({ activeTab, setActiveTab, tabs }) => {
+const Sidebar = ({ activeTab, setActiveTab, tabs, isMobile }) => {
   const handleLogout = () => {
     // Add your logout logic here (e.g. clear session, redirect)
     window.location.reload()
@@ -9,9 +9,13 @@ const Sidebar = ({ activeTab, setActiveTab, tabs }) => {
 
   return (
     <motion.aside
-      initial={{ x: -100 }}
-      animate={{ x: 0 }}
-      className="fixed left-0 top-0 h-full w-64 bg-indigo-dark border-r border-white/20 z-50 hidden lg:block"
+      initial={isMobile ? false : { x: -100 }}
+      animate={isMobile ? false : { x: 0 }}
+      className={
+        isMobile
+          ? 'h-full w-full bg-indigo-dark flex flex-col relative'
+          : 'fixed left-0 top-0 h-full w-64 bg-indigo-dark border-r border-white/20 z-50 hidden lg:block'
+      }
     >
       <div className="p-5 border-b border-white/20">
         <div className="flex items-center gap-3">
