@@ -176,11 +176,3 @@ sdpm-uiux/
 
 This project is created for academic purposes as part of SDPM coursework.
 
-## 👨‍💻 Author
-
-Student Productivity Tracker UI/UX Design
-SRM University - Semester 5
-
----
-
-**Note**: This is a UI/UX prototype. Backend integration and data persistence are not included in this version.
